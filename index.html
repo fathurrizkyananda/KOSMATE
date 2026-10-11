@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOSMATE — Sistem Pengelolaan Kos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: { sans: ['"Plus Jakarta Sans"', "sans-serif"] },
+            colors: {
+              brand: {
+                50: "#eef2ff",
+                100: "#e0e7ff",
+                500: "#6366f1",
+                600: "#4f46e5",
+                700: "#4338ca",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.25s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white"
+  >
+    <div id="app" class="flex-1 flex flex-col"></div>
+
+    <div
+      id="toast-container"
+      class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"
+    ></div>
+
+    <script>
+      const mockData = {
+        users: [
+          {
+            id: 1,
+            name: "Super Admin",
+            email: "admin@kosmate.com",
+            role: "admin",
+            phone: "081234567890",
+            room: "-",
+            avatar:
+              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+          },
+          {
+            id: 2,
+            name: "Budi Santoso",
+            email: "budi@gmail.com",
+            role: "penghuni",
+            phone: "085678901234",
+            room: "A-01",
+            avatar:
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+          },
+          {
+            id: 3,
+            name: "Siti Rahma",
+            email: "siti@gmail.com",
+            role: "penghuni",
+            phone: "089876543210",
+            room: "B-02",
+            avatar:
+              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+          },
+        ],
+        rooms: [
+          {
+            id: 1,
+            number: "A-01",
+            type: "Deluxe",
+            price: 1500000,
+            status: "Terisi",
+            facilities: "AC, WiFi, Kamar Mandi Dalam, Kasur Queen",
+          },
+          {
+            id: 2,
+            number: "A-02",
+            type: "Deluxe",
+            price: 1500000,
+            status: "Tersedia",
+            facilities: "AC, WiFi, Kamar Mandi Dalam, Kasur Queen",
+          },
+          {
+            id: 3,
+            number: "B-01",
+            type: "Standard",
+            price: 900000,
+            status: "Tersedia",
+            facilities: "Kipas Angin, WiFi, Kamar Mandi Luar",
+          },
+          {
+            id: 4,
+            number: "B-02",
+            type: "Standard",
+            price: 900000,
+            status: "Terisi",
+            facilities: "Kipas Angin, WiFi, Kamar Mandi Luar",
+          },
+          {
+            id: 5,
+            number: "VIP-01",
+            type: "VIP",
+            price: 2200000,
+            status: "Tersedia",
+            facilities:
+              "AC, TV, Kulkas, Kamar Mandi Dalam Water Heater, King Size",
+          },
+        ],
+        tenants: [
+          {
+            id: 1,
+            name: "Budi Santoso",
+            email: "budi@gmail.com",
+            phone: "085678901234",
+            room: "A-01",
+            joinDate: "2025-01-01",
+            status: "Aktif",
+          },
+          {
+            id: 2,
+            name: "Siti Rahma",
+            email: "siti@gmail.com",
+            phone: "089876543210",
+            room: "B-02",
+            joinDate: "2025-02-10",
+            status: "Aktif",
+          },
+        ],
+        rentRequests: [
+          {
+            id: 1,
+            tenantName: "Budi Santoso",
+            roomNumber: "A-01",
+            date: "2025-01-01",
+            duration: "6 Bulan",
+            status: "Disetujui",
+            notes: "Pembayaran muka lunas",
+          },
+          {
+            id: 2,
+            tenantName: "Siti Rahma",
+            roomNumber: "B-02",
+            date: "2025-02-10",
+            duration: "1 Tahun",
+            status: "Disetujui",
+            notes: "Mahasiswa aktif",
+          },
+          {
+            id: 3,
+            tenantName: "Joko Widodo",
+            roomNumber: "A-02",
+            date: "2026-03-01",
+            duration: "3 Bulan",
+            status: "Menunggu",
+            notes: "Mohon konfirmasi segera",
+          },
+        ],
+        bills: [
+          {
+            id: 1,
+            tenantName: "Budi Santoso",
+            room: "A-01",
+            month: "Maret 2026",
+            amount: 1500000,
+            dueDate: "2026-03-10",
+            status: "Lunas",
+          },
+          {
+            id: 2,
+            tenantName: "Siti Rahma",
+            room: "B-02",
+            month: "Maret 2026",
+            amount: 900000,
+            dueDate: "2026-03-10",
+            status: "Belum Lunas",
+          },
+          {
+            id: 3,
+            tenantName: "Budi Santoso",
+            room: "A-01",
+            month: "April 2026",
+            amount: 1500000,
+            dueDate: "2026-04-10",
+            status: "Belum Lunas",
+          },
+        ],
+        payments: [
+          {
+            id: 1,
+            tenantName: "Budi Santoso",
+            billId: 1,
+            amount: 1500000,
+            date: "2026-03-05",
+            method: "Transfer BCA",
+            proof: "bukti_budi.jpg",
+            status: "Terverifikasi",
+          },
+          {
+            id: 2,
+            tenantName: "Siti Rahma",
+            billId: 2,
+            amount: 900000,
+            date: "2026-03-08",
+            method: "GoPay",
+            proof: "bukti_siti.jpg",
+            status: "Pending",
+          },
+        ],
+        complaints: [
+          {
+            id: 1,
+            tenantName: "Budi Santoso",
+            room: "A-01",
+            category: "AC Kurang Dingin",
+            date: "2026-03-02",
+            desc: "AC di kamar A-01 sudah 2 hari tidak dingin.",
+            status: "Selesai",
+          },
+          {
+            id: 2,
+            tenantName: "Siti Rahma",
+            room: "B-02",
+            category: "Keran Air Bocor",
+            date: "2026-03-06",
+            desc: "Keran wastafel kamar mandi bocor halus.",
+            status: "Proses",
+          },
+        ],
+      };
+
+      let appState = {
+        currentUser: null, // {id, name, email, role, room, phone, avatar}
+        activeTab: "login", // 'login', 'register', 'dashboard', 'profile', 'rooms', 'tenants', 'rent-requests', 'bills', 'payments', 'complaints', 'reports'
+        modal: { open: false, type: null, data: null },
+        filter: { search: "", status: "all" },
+      };
+
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        const bgCol =
+          type === "success"
+            ? "bg-emerald-600"
+            : type === "error"
+              ? "bg-rose-600"
+              : "bg-amber-600";
+        const icon =
+          type === "success"
+            ? "fa-circle-check"
+            : type === "error"
+              ? "fa-circle-xmark"
+              : "fa-triangle-exclamation";
+
+        toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white font-medium text-sm ${bgCol} animate-fade-in transition-all duration-300`;
+        toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i><span>${message}</span>`;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      function render() {
+        const app = document.getElementById("app");
+        if (!appState.currentUser) {
+          app.innerHTML =
+            appState.activeTab === "register"
+              ? renderRegisterPage()
+              : renderLoginPage();
+        } else {
+          app.innerHTML = renderDashboardLayout();
+        }
+        bindEvents();
+      }
+
+      function renderLoginPage() {
+        return `
+                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-100 to-blue-50 p-4">
+                    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in">
+                        <div class="text-center mb-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-500/30 text-2xl font-bold mb-4">
+                                <i class="fa-solid fa-house-chimney"></i>
+                            </div>
+                            <h1 class="text-2xl font-bold text-slate-900">KOSMATE</h1>
+                            <p class="text-sm text-slate-500 mt-1">Sistem Pengelolaan Kos Modern & Terintegrasi</p>
+                        </div>
+                        
+                        <form id="login-form" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Email / Username</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-envelope"></i></span>
+                                    <input type="email" id="login-email" required placeholder="admin@kosmate.com atau budi@gmail.com" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Password</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition-all">Masuk Aplikasi</button>
+                        </form>
+
+                        <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                            <p class="text-xs text-slate-500 mb-3">Demo Akun Cepat:</p>
+                            <div class="flex gap-2 justify-center">
+                                <button type="button" onclick="quickLogin('admin@kosmate.com')" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-medium transition">Login Admin</button>
+                                <button type="button" onclick="quickLogin('budi@gmail.com')" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium transition">Login Penghuni (Budi)</button>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 text-center">
+                            <p class="text-sm text-slate-600">Belum punya akun? <button type="button" onclick="appState.activeTab='register'; render();" class="text-brand-600 font-semibold hover:underline">Registrasi</button></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function renderRegisterPage() {
+        return `
+                <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-100 to-blue-50 p-4">
+                    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 border border-slate-100 animate-fade-in">
+                        <div class="text-center mb-6">
+                            <div class="inline-flex items-center justify-center w-14 h-14 bg-brand-600 text-white rounded-2xl shadow-lg shadow-brand-500/30 text-xl font-bold mb-3">
+                                <i class="fa-solid fa-user-plus"></i>
+                            </div>
+                            <h1 class="text-2xl font-bold text-slate-900">Registrasi Akun Baru</h1>
+                            <p class="text-xs text-slate-500 mt-1">Daftarkan diri Anda sebagai penghuni kos</p>
+                        </div>
+                        
+                        <form id="register-form" class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nama Lengkap</label>
+                                <input type="text" id="reg-name" required placeholder="Cth. Rina Melati" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Email</label>
+                                <input type="email" id="reg-email" required placeholder="rina@gmail.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">No. Handphone / WhatsApp</label>
+                                <input type="text" id="reg-phone" required placeholder="08123456789" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Pilih Kamar Incaran</label>
+                                <select id="reg-room" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                                    ${mockData.rooms
+                                      .filter((r) => r.status === "Tersedia")
+                                      .map(
+                                        (r) =>
+                                          `<option value="${r.number}">Kamar ${r.number} (${r.type} - Rp ${r.price.toLocaleString()})</option>`,
+                                      )
+                                      .join("")}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Password</label>
+                                <input type="password" id="reg-password" required placeholder="••••••••" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all">
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition-all mt-2">Daftar Sekarang</button>
+                        </form>
+
+                        <div class="mt-5 text-center">
+                            <p class="text-sm text-slate-600">Sudah punya akun? <button type="button" onclick="appState.activeTab='login'; render();" class="text-brand-600 font-semibold hover:underline">Login</button></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function quickLogin(email) {
+        const user = mockData.users.find((u) => u.email === email);
+        if (user) {
+          appState.currentUser = user;
+          appState.activeTab = "dashboard";
+          showToast(
+            `Selamat datang kembali, ${user.name}! (${user.role.toUpperCase()})`,
+          );
+          render();
+        }
+      }
+
+      function renderDashboardLayout() {
+        const user = appState.currentUser;
+        const isAdmin = user.role === "admin";
+
+        return `
+                <div class="min-h-screen flex flex-col md:flex-row bg-slate-100">
+                    <!-- Sidebar Navigation -->
+                    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 shadow-xl z-20">
+                        <div>
+                            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+                                <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-brand-500/30">
+                                    <i class="fa-solid fa-house-chimney"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-white text-base tracking-wide">KOSMATE</h2>
+                                    <span class="text-xs px-2 py-0.5 rounded-md bg-brand-500/20 text-brand-300 font-medium capitalize">${user.role}</span>
+                                </div>
+                            </div>
+
+                            <nav class="p-4 space-y-1 text-sm font-medium">
+                                <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "dashboard" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+                                </button>
+                                <button onclick="switchTab('profile')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "profile" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-user-gear w-5"></i> Manajemen Profil
+                                </button>
+                                <button onclick="switchTab('rooms')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "rooms" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-door-open w-5"></i> Manajemen Kamar
+                                </button>
+                                ${
+                                  isAdmin
+                                    ? `
+                                <button onclick="switchTab('tenants')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "tenants" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-users w-5"></i> Manajemen Penghuni
+                                </button>
+                                `
+                                    : ""
+                                }
+                                <button onclick="switchTab('rent-requests')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "rent-requests" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-file-contract w-5"></i> Pengajuan Sewa
+                                </button>
+                                <button onclick="switchTab('bills')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "bills" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-file-invoice-dollar w-5"></i> Tagihan
+                                </button>
+                                <button onclick="switchTab('payments')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "payments" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-credit-card w-5"></i> Pembayaran
+                                </button>
+                                <button onclick="switchTab('complaints')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "complaints" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-triangle-exclamation w-5"></i> Pengaduan
+                                </button>
+                                ${
+                                  isAdmin
+                                    ? `
+                                <button onclick="switchTab('reports')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition ${appState.activeTab === "reports" ? "bg-brand-600 text-white shadow-md shadow-brand-600/30" : "hover:bg-slate-800 text-slate-400 hover:text-white"}">
+                                    <i class="fa-solid fa-chart-line w-5"></i> Laporan & Ekspor
+                                </button>
+                                `
+                                    : ""
+                                }
+                            </nav>
+                        </div>
+
+                        <div class="p-4 border-t border-slate-800">
+                            <div class="flex items-center gap-3 p-2 bg-slate-800/50 rounded-xl mb-3">
+                                <img src="${user.avatar}" alt="Avatar" class="w-9 h-9 rounded-full object-cover">
+                                <div class="overflow-hidden">
+                                    <h4 class="text-sm font-semibold text-white truncate">${user.name}</h4>
+                                    <p class="text-xs text-slate-400 truncate">${user.email}</p>
+                                </div>
+                            </div>
+                            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl font-medium text-sm transition">
+                                <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                            </button>
+                        </div>
+                    </aside>
+
+                    <!-- Main Content Area -->
+                    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+                        <!-- Top Header bar -->
+                        <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <h1 class="text-xl font-bold text-slate-800 capitalize">${formatTabTitle(appState.activeTab)}</h1>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full font-medium"><i class="fa-regular fa-calendar mr-1"></i> ${new Date().toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+                            </div>
+                        </header>
+
+                        <!-- Tab Body Content -->
+                        <div class="p-6 flex-1">
+                            ${renderActiveTabContent()}
+                        </div>
+                    </main>
+                </div>
+                ${renderModalHtml()}
+            `;
+      }
+
+      function formatTabTitle(tab) {
+        const titles = {
+          dashboard: "Dashboard Utama",
+          profile: "Manajemen Profil",
+          rooms: "Manajemen Kamar",
+          tenants: "Manajemen Penghuni Kos",
+          "rent-requests": "Pengajuan Sewa Kamar",
+          bills: "Tagihan Pembayaran",
+          payments: "Konfirmasi Pembayaran",
+          complaints: "Pengaduan & Pemeliharaan",
+          reports: "Laporan & Ekspor Data",
+        };
+        return titles[tab] || tab;
+      }
+
+      function switchTab(tab) {
+        appState.activeTab = tab;
+        render();
+      }
+
+      function logout() {
+        appState.currentUser = null;
+        appState.activeTab = "login";
+        showToast("Anda telah keluar sistem.", "info");
+        render();
+      }
+
+      function renderDashboardTab() {
+        const user = appState.currentUser;
+        const isAdmin = user.role === "admin";
+
+        const totalRooms = mockData.rooms.length;
+        const occupiedRooms = mockData.rooms.filter(
+          (r) => r.status === "Terisi",
+        ).length;
+        const availableRooms = totalRooms - occupiedRooms;
+        const activeTenants = mockData.tenants.length;
+        const pendingBills = mockData.bills.filter(
+          (b) => b.status === "Belum Lunas",
+        ).length;
+        const activeComplaints = mockData.complaints.filter(
+          (c) => c.status !== "Selesai",
+        ).length;
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <!-- Welcome Banner -->
+                    <div class="bg-gradient-to-r from-brand-600 to-indigo-700 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                        <div class="absolute right-0 bottom-0 transform translate-x-10 translate-y-10 text-white/10 text-9xl pointer-events-none">
+                            <i class="fa-solid fa-house-laptop"></i>
+                        </div>
+                        <div class="relative z-10 max-w-2xl">
+                            <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 inline-block">Role: ${user.role}</span>
+                            <h2 class="text-2xl md:text-3xl font-bold mb-2">Halo, ${user.name}! 👋</h2>
+                            <p class="text-indigo-100 text-sm md:text-base leading-relaxed">
+                                ${isAdmin ? "Kelola seluruh aktivitas kos, kamar, tagihan, dan pengaduan penghuni dengan mudah dan efisien melalui sistem KOSMATE." : `Anda saat ini terdaftar di kamar <strong>${user.room}</strong>. Pastikan cek tagihan bulanan dan laporkan kendala fasilitas jika ada.`}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Kamar Tersedia</p>
+                                <h3 class="text-2xl font-bold text-slate-800 mt-1">${availableRooms} <span class="text-sm font-normal text-slate-500">/ ${totalRooms}</span></h3>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-door-open"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Penghuni</p>
+                                <h3 class="text-2xl font-bold text-slate-800 mt-1">${activeTenants} Orang</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tagihan Belum Lunas</p>
+                                <h3 class="text-2xl font-bold text-slate-800 mt-1">${pendingBills} Tagihan</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pengaduan Aktif</p>
+                                <h3 class="text-2xl font-bold text-slate-800 mt-1">${activeComplaints} Kasus</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Information & Activity Table -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-brand-600"></i> Aksi Cepat</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                ${
+                                  isAdmin
+                                    ? `
+                                    <button onclick="switchTab('rooms')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                        <i class="fa-solid fa-circle-plus text-xl text-brand-600"></i>
+                                        <span class="font-semibold text-sm">Kelola Kamar</span>
+                                    </button>
+                                    <button onclick="switchTab('bills')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                        <i class="fa-solid fa-file-invoice text-xl text-brand-600"></i>
+                                        <span class="font-semibold text-sm">Buat Tagihan</span>
+                                    </button>
+                                `
+                                    : `
+                                    <button onclick="openModal('add-complaint')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                        <i class="fa-solid fa-bullhorn text-xl text-brand-600"></i>
+                                        <span class="font-semibold text-sm">Buat Pengaduan</span>
+                                    </button>
+                                    <button onclick="switchTab('bills')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                        <i class="fa-solid fa-credit-card text-xl text-brand-600"></i>
+                                        <span class="font-semibold text-sm">Bayar Tagihan</span>
+                                    </button>
+                                `
+                                }
+                                <button onclick="switchTab('profile')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                    <i class="fa-solid fa-user-pen text-xl text-brand-600"></i>
+                                    <span class="font-semibold text-sm">Edit Profil</span>
+                                </button>
+                                <button onclick="switchTab('complaints')" class="p-4 bg-slate-50 hover:bg-brand-50 hover:text-brand-600 rounded-xl text-left transition border border-slate-100 flex flex-col gap-2">
+                                    <i class="fa-solid fa-headset text-xl text-brand-600"></i>
+                                    <span class="font-semibold text-sm">Cek Pengaduan</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-brand-600"></i> Status Kamar Terbaru</h3>
+                            <div class="space-y-3">
+                                ${mockData.rooms
+                                  .slice(0, 4)
+                                  .map(
+                                    (r) => `
+                                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">${r.number}</div>
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-slate-800">${r.type} - Rp ${r.price.toLocaleString()}</h4>
+                                                <p class="text-xs text-slate-400">${r.facilities.substring(0, 35)}...</p>
+                                            </div>
+                                        </div>
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${r.status === "Terisi" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}">${r.status}</span>
+                                    </div>
+                                `,
+                                  )
+                                  .join("")}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function renderProfileTab() {
+        const user = appState.currentUser;
+        return `
+                <div class="max-w-2xl mx-auto bg-white rounded-3xl p-8 shadow-sm border border-slate-200 animate-fade-in">
+                    <div class="flex items-center gap-6 pb-6 border-b border-slate-100 mb-6">
+                        <img src="${user.avatar}" alt="Avatar" class="w-20 h-20 rounded-full object-cover shadow-md">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">${user.name}</h2>
+                            <p class="text-sm text-slate-500">${user.email}</p>
+                            <span class="inline-block mt-2 px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-semibold uppercase tracking-wider">${user.role}</span>
+                        </div>
+                    </div>
+
+                    <form id="profile-form" onsubmit="handleUpdateProfile(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nama Lengkap</label>
+                            <input type="text" id="profile-name" value="${user.name}" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Email</label>
+                            <input type="email" id="profile-email" value="${user.email}" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">No. Handphone</label>
+                            <input type="text" id="profile-phone" value="${user.phone || ""}" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Kamar Kos</label>
+                            <input type="text" disabled value="${user.room || "-"}" class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed">
+                        </div>
+                        <button type="submit" class="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-md transition-all">Simpan Perubahan Profil</button>
+                    </form>
+                </div>
+            `;
+      }
+
+      function handleUpdateProfile(e) {
+        e.preventDefault();
+        const name = document.getElementById("profile-name").value;
+        const email = document.getElementById("profile-email").value;
+        const phone = document.getElementById("profile-phone").value;
+
+        appState.currentUser.name = name;
+        appState.currentUser.email = email;
+        appState.currentUser.phone = phone;
+
+        showToast("Profil berhasil diperbarui!");
+        render();
+      }
+
+      function renderRoomsTab() {
+        const isAdmin = appState.currentUser.role === "admin";
+        const rooms = mockData.rooms;
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Daftar Kamar Kos</h2>
+                            <p class="text-xs text-slate-500">Kelola informasi kamar, tipe, harga, dan ketersediaan</p>
+                        </div>
+                        ${
+                          isAdmin
+                            ? `
+                            <button onclick="openModal('add-room')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Tambah Kamar Baru
+                            </button>
+                        `
+                            : ""
+                        }
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${rooms
+                          .map(
+                            (room) => `
+                            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between">
+                                <div class="p-6">
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 font-bold text-lg flex items-center justify-center">${room.number}</div>
+                                            <div>
+                                                <h3 class="font-bold text-slate-800 text-base">${room.type}</h3>
+                                                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md ${room.status === "Terisi" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}">${room.status}</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-base font-bold text-slate-900">Rp ${room.price.toLocaleString()}<span class="text-xs text-slate-400 font-normal">/bln</span></span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-3"><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i> ${room.facilities}</p>
+                                </div>
+                                <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                                    ${
+                                      isAdmin
+                                        ? `
+                                        <div class="flex gap-2">
+                                            <button onclick="openModal('edit-room', ${room.id})" class="p-2 text-slate-600 hover:text-brand-600 bg-white rounded-lg border border-slate-200 text-xs font-medium transition"><i class="fa-solid fa-pen"></i> Edit</button>
+                                            <button onclick="deleteRoom(${room.id})" class="p-2 text-rose-600 hover:text-rose-700 bg-white rounded-lg border border-slate-200 text-xs font-medium transition"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    `
+                                        : `
+                                        <span class="text-xs text-slate-500">Fasilitas Lengkap</span>
+                                    `
+                                    }
+                                    <button onclick="openModal('detail-room', ${room.id})" class="px-3 py-1.5 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg text-xs font-semibold transition">Detail</button>
+                                </div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function deleteRoom(id) {
+        if (confirm("Apakah Anda yakin ingin menghapus kamar ini?")) {
+          mockData.rooms = mockData.rooms.filter((r) => r.id !== id);
+          showToast("Kamar berhasil dihapus.");
+          render();
+        }
+      }
+
+      function renderTenantsTab() {
+        return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+                    <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-lg">Daftar Penghuni Kos</h2>
+                            <p class="text-xs text-slate-500">Manajemen data penghuni aktif yang menyewa kamar kos</p>
+                        </div>
+                        <button onclick="openModal('add-tenant')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> Tambah Penghuni
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs">
+                                <tr>
+                                    <th class="px-6 py-4">Nama Penghuni</th>
+                                    <th class="px-6 py-4">Kamar</th>
+                                    <th class="px-6 py-4">Kontak (HP)</th>
+                                    <th class="px-6 py-4">Tanggal Masuk</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${mockData.tenants
+                                  .map(
+                                    (t) => `
+                                    <tr class="hover:bg-slate-50/50 transition">
+                                        <td class="px-6 py-4 font-semibold text-slate-800">${t.name}</td>
+                                        <td class="px-6 py-4"><span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md font-bold text-xs">${t.room}</span></td>
+                                        <td class="px-6 py-4 text-slate-600">${t.phone}</td>
+                                        <td class="px-6 py-4 text-slate-600">${t.joinDate}</td>
+                                        <td class="px-6 py-4"><span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full font-semibold text-xs">${t.status}</span></td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button onclick="deleteTenant(${t.id})" class="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `,
+                                  )
+                                  .join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function deleteTenant(id) {
+        mockData.tenants = mockData.tenants.filter((t) => t.id !== id);
+        showToast("Data penghuni berhasil dihapus.");
+        render();
+      }
+
+      function renderRentRequestsTab() {
+        const isAdmin = appState.currentUser.role === "admin";
+        const user = appState.currentUser;
+        const requests = isAdmin
+          ? mockData.rentRequests
+          : mockData.rentRequests.filter((r) => r.tenantName === user.name);
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-lg">Pengajuan Sewa Kamar</h2>
+                            <p class="text-xs text-slate-500">Kelola permohonan sewa baru oleh calon atau penghuni kos</p>
+                        </div>
+                        <button onclick="openModal('add-rent-request')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Ajukan Sewa Baru
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${requests
+                          .map(
+                            (req) => `
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 class="font-bold text-slate-800 text-base">${req.tenantName}</h3>
+                                            <p class="text-xs text-slate-400">Kamar: <strong class="text-brand-600">${req.roomNumber}</strong></p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${req.status === "Disetujui" ? "bg-emerald-100 text-emerald-700" : req.status === "Ditolak" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}">${req.status}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-2"><strong>Durasi:</strong> ${req.duration}</p>
+                                    <p class="text-xs text-slate-600 mt-1"><strong>Catatan:</strong> ${req.notes}</p>
+                                    <p class="text-xs text-slate-400 mt-2"><i class="fa-regular fa-calendar mr-1"></i> Tanggal Ajuan: ${req.date}</p>
+                                </div>
+                                ${
+                                  isAdmin && req.status === "Menunggu"
+                                    ? `
+                                    <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+                                        <button onclick="updateRentStatus(${req.id}, 'Disetujui')" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition">Setujui</button>
+                                        <button onclick="updateRentStatus(${req.id}, 'Ditolak')" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition">Tolak</button>
+                                    </div>
+                                `
+                                    : ""
+                                }
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function updateRentStatus(id, status) {
+        const req = mockData.rentRequests.find((r) => r.id === id);
+        if (req) {
+          req.status = status;
+          if (status === "Disetujui") {
+            const room = mockData.rooms.find(
+              (r) => r.number === req.roomNumber,
+            );
+            if (room) room.status = "Terisi";
+          }
+          showToast(`Pengajuan sewa berhasil diubah menjadi ${status}.`);
+          render();
+        }
+      }
+
+      function renderBillsTab() {
+        const isAdmin = appState.currentUser.role === "admin";
+        const user = appState.currentUser;
+        const bills = isAdmin
+          ? mockData.bills
+          : mockData.bills.filter((b) => b.tenantName === user.name);
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-lg">Tagihan Sewa Kamar</h2>
+                            <p class="text-xs text-slate-500">Kelola dan pantau status pembayaran tagihan bulanan</p>
+                        </div>
+                        ${
+                          isAdmin
+                            ? `
+                            <button onclick="openModal('add-bill')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Buat Tagihan Baru
+                            </button>
+                        `
+                            : ""
+                        }
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${bills
+                          .map(
+                            (bill) => `
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 class="font-bold text-slate-800 text-base">${bill.tenantName}</h3>
+                                            <p class="text-xs text-slate-400">Kamar: <strong class="text-brand-600">${bill.room}</strong></p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${bill.status === "Lunas" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}">${bill.status}</span>
+                                    </div>
+                                    <div class="my-4 py-3 bg-slate-50 rounded-xl px-4">
+                                        <span class="text-xs text-slate-500 block">Periode: ${bill.month}</span>
+                                        <span class="text-xl font-bold text-slate-900">Rp ${bill.amount.toLocaleString()}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> Jatuh Tempo: ${bill.dueDate}</p>
+                                </div>
+                                ${
+                                  !isAdmin && bill.status === "Belum Lunas"
+                                    ? `
+                                    <button onclick="openModal('pay-bill', ${bill.id})" class="mt-4 w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl transition shadow-md">Bayar Sekarang</button>
+                                `
+                                    : ""
+                                }
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function renderPaymentsTab() {
+        const isAdmin = appState.currentUser.role === "admin";
+        const user = appState.currentUser;
+        const payments = isAdmin
+          ? mockData.payments
+          : mockData.payments.filter((p) => p.tenantName === user.name);
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                            <div>
+                                <h2 class="font-bold text-slate-800 text-lg">Konfirmasi Pembayaran</h2>
+                                <p class="text-xs text-slate-500">Daftar bukti transfer dan verifikasi pembayaran penghuni</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 font-semibold uppercase text-xs">
+                                    <tr>
+                                        <th class="px-6 py-4">Penghuni</th>
+                                        <th class="px-6 py-4">Nominal</th>
+                                        <th class="px-6 py-4">Metode</th>
+                                        <th class="px-6 py-4">Tanggal</th>
+                                        <th class="px-6 py-4">Bukti</th>
+                                        <th class="px-6 py-4">Status</th>
+                                        ${isAdmin ? '<th class="px-6 py-4 text-right">Aksi</th>' : ""}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${payments
+                                      .map(
+                                        (p) => `
+                                        <tr class="hover:bg-slate-50/50 transition">
+                                            <td class="px-6 py-4 font-semibold text-slate-800">${p.tenantName}</td>
+                                            <td class="px-6 py-4 font-bold text-brand-600">Rp ${p.amount.toLocaleString()}</td>
+                                            <td class="px-6 py-4 text-slate-600">${p.method}</td>
+                                            <td class="px-6 py-4 text-slate-600">${p.date}</td>
+                                            <td class="px-6 py-4"><a href="#" onclick="showToast('Membuka pratinjau bukti bayar...','info')" class="text-brand-600 hover:underline font-semibold text-xs"><i class="fa-solid fa-image mr-1"></i> ${p.proof}</a></td>
+                                            <td class="px-6 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${p.status === "Terverifikasi" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}">${p.status}</span></td>
+                                            ${
+                                              isAdmin
+                                                ? `
+                                                <td class="px-6 py-4 text-right">
+                                                    ${
+                                                      p.status === "Pending"
+                                                        ? `
+                                                        <button onclick="verifyPayment(${p.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition">Verifikasi</button>
+                                                    `
+                                                        : '<span class="text-xs text-slate-400">Selesai</span>'
+                                                    }
+                                                </td>
+                                            `
+                                                : ""
+                                            }
+                                        </tr>
+                                    `,
+                                      )
+                                      .join("")}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function verifyPayment(id) {
+        const pay = mockData.payments.find((p) => p.id === id);
+        if (pay) {
+          pay.status = "Terverifikasi";
+          const bill = mockData.bills.find((b) => b.id === pay.billId);
+          if (bill) bill.status = "Lunas";
+          showToast("Pembayaran berhasil diverifikasi dan tagihan dilunaskan!");
+          render();
+        }
+      }
+
+      function renderComplaintsTab() {
+        const isAdmin = appState.currentUser.role === "admin";
+        const user = appState.currentUser;
+        const complaints = isAdmin
+          ? mockData.complaints
+          : mockData.complaints.filter((c) => c.tenantName === user.name);
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-lg">Pengaduan & Pemeliharaan Fasilitas</h2>
+                            <p class="text-xs text-slate-500">Laporkan kendala fasilitas kamar atau lingkungan kos</p>
+                        </div>
+                        <button onclick="openModal('add-complaint')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Buat Pengaduan Baru
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${complaints
+                          .map(
+                            (comp) => `
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 class="font-bold text-slate-800 text-base">${comp.category}</h3>
+                                            <p class="text-xs text-slate-400">Pelapor: <strong>${comp.tenantName}</strong> (Kamar ${comp.room})</p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${comp.status === "Selesai" ? "bg-emerald-100 text-emerald-700" : comp.status === "Proses" ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"}">${comp.status}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-2 bg-slate-50 p-3 rounded-xl border border-slate-100">${comp.desc}</p>
+                                    <p class="text-xs text-slate-400 mt-3"><i class="fa-regular fa-calendar mr-1"></i> Tanggal: ${comp.date}</p>
+                                </div>
+                                ${
+                                  isAdmin
+                                    ? `
+                                    <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+                                        <button onclick="updateComplaintStatus(${comp.id}, 'Proses')" class="flex-1 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-xs rounded-xl transition">Proses</button>
+                                        <button onclick="updateComplaintStatus(${comp.id}, 'Selesai')" class="flex-1 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 font-semibold text-xs rounded-xl transition">Selesai</button>
+                                    </div>
+                                `
+                                    : ""
+                                }
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function updateComplaintStatus(id, status) {
+        const comp = mockData.complaints.find((c) => c.id === id);
+        if (comp) {
+          comp.status = status;
+          showToast(`Status pengaduan diperbarui menjadi ${status}.`);
+          render();
+        }
+      }
+
+      function renderReportsTab() {
+        const totalPendapatan = mockData.payments
+          .filter((p) => p.status === "Terverifikasi")
+          .reduce((acc, curr) => acc + curr.amount, 0);
+
+        return `
+                <div class="space-y-6 animate-fade-in">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="font-bold text-slate-800 text-lg">Laporan & Analitik Keuangan Kos</h2>
+                            <p class="text-xs text-slate-500">Ringkasan data operasional dan ekspor laporan resmi</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="exportReport('PDF')" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Ekspor PDF</button>
+                            <button onclick="exportReport('Excel')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow transition flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Ekspor Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-semibold text-slate-400 uppercase">Total Pendapatan Terverifikasi</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-2">Rp ${totalPendapatan.toLocaleString()}</h3>
+                            <span class="text-xs text-emerald-600 font-semibold mt-1 inline-block"><i class="fa-solid fa-arrow-up mr-1"></i> Kas Masuk Valid</span>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-semibold text-slate-400 uppercase">Total Kamar Terisi</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-2">${mockData.rooms.filter((r) => r.status === "Terisi").length} Kamar</h3>
+                            <span class="text-xs text-brand-600 font-semibold mt-1 inline-block">Okupansi Stabil</span>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-semibold text-slate-400 uppercase">Total Pengaduan Masuk</p>
+                            <h3 class="text-2xl font-bold text-slate-900 mt-2">${mockData.complaints.length} Kasus</h3>
+                            <span class="text-xs text-amber-600 font-semibold mt-1 inline-block">Respon Cepat</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function exportReport(type) {
+        showToast(
+          `Berhasil mengekspor Laporan Kosmate ke format ${type}! File sedang diunduh.`,
+          "success",
+        );
+      }
+
+      function renderModalHtml() {
+        if (!appState.modal.open) return "";
+        const type = appState.modal.type;
+
+        let title = "";
+        let content = "";
+
+        if (type === "add-room") {
+          title = "Tambah Kamar Baru";
+          content = `
+                    <form onsubmit="saveRoom(event)" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Kamar</label><input type="text" id="m-room-num" required placeholder="Cth. C-01" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Tipe Kamar</label><input type="text" id="m-room-type" required placeholder="Cth. Deluxe" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Harga per Bulan (Rp)</label><input type="number" id="m-room-price" required placeholder="1500000" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Fasilitas</label><input type="text" id="m-room-fac" required placeholder="AC, WiFi, Kamar Mandi Dalam" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Simpan Kamar</button>
+                    </form>
+                `;
+        } else if (type === "add-tenant") {
+          title = "Tambah Penghuni Kos";
+          content = `
+                    <form onsubmit="saveTenant(event)" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label><input type="text" id="m-t-name" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Email</label><input type="email" id="m-t-email" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">No. HP</label><input type="text" id="m-t-phone" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Kamar</label><input type="text" id="m-t-room" required placeholder="A-01" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Simpan Penghuni</button>
+                    </form>
+                `;
+        } else if (type === "add-bill") {
+          title = "Buat Tagihan Baru";
+          content = `
+                    <form onsubmit="saveBill(event)" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama Penghuni</label><input type="text" id="m-b-name" required placeholder="Budi Santoso" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Kamar</label><input type="text" id="m-b-room" required placeholder="A-01" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Periode Bulan</label><input type="text" id="m-b-month" required placeholder="April 2026" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label><input type="number" id="m-b-amount" required placeholder="1500000" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Jatuh Tempo</label><input type="date" id="m-b-due" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Terbitkan Tagihan</button>
+                    </form>
+                `;
+        } else if (type === "add-complaint") {
+          title = "Buat Pengaduan Baru";
+          content = `
+                    <form onsubmit="saveComplaint(event)" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Kategori Kendala</label><input type="text" id="m-c-cat" required placeholder="Cth. AC Bocor / Lampu Mati" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Deskripsi Lengkap</label><textarea id="m-c-desc" required rows="3" placeholder="Jelaskan detail kendala..." class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></textarea></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Kirim Pengaduan</button>
+                    </form>
+                `;
+        } else if (type === "add-rent-request") {
+          title = "Ajukan Sewa Kamar";
+          content = `
+                    <form onsubmit="saveRentRequest(event)" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Kamar</label>
+                            <select id="m-r-room" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
+                                ${mockData.rooms
+                                  .filter((r) => r.status === "Tersedia")
+                                  .map(
+                                    (r) =>
+                                      `<option value="${r.number}">Kamar ${r.number} (${r.type})</option>`,
+                                  )
+                                  .join("")}
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Durasi Sewa</label><input type="text" id="m-r-dur" required placeholder="Cth. 6 Bulan" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Tambahan</label><input type="text" id="m-r-notes" placeholder="Catatan pembayaran/kedatangan" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Kirim Pengajuan</button>
+                    </form>
+                `;
+        } else if (type === "pay-bill") {
+          const billId = appState.modal.data;
+          const bill = mockData.bills.find((b) => b.id === billId);
+          title = `Bayar Tagihan (${bill.month})`;
+          content = `
+                    <form onsubmit="submitPayment(event, ${billId})" class="space-y-3">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Total Bayar</label><input type="text" disabled value="Rp ${bill.amount.toLocaleString()}" class="w-full px-3 py-2 bg-slate-100 border rounded-xl text-sm font-bold text-brand-600"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Metode Pembayaran</label>
+                            <select id="m-pay-method" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
+                                <option value="Transfer BCA">Transfer BCA (1234567890)</option>
+                                <option value="Transfer Mandiri">Transfer Mandiri (0987654321)</option>
+                                <option value="GoPay / QRIS">GoPay / QRIS</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Unggah Bukti Transfer</label><input type="file" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm"></div>
+                        <button type="submit" class="w-full py-2.5 bg-brand-600 text-white font-semibold rounded-xl text-sm mt-3">Kirim Bukti Pembayaran</button>
+                    </form>
+                `;
+        }
+
+        return `
+                <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 relative border border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 text-lg">${title}</h3>
+                            <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        ${content}
+                    </div>
+                </div>
+            `;
+      }
+
+      function openModal(type, data = null) {
+        appState.modal = { open: true, type, data };
+        render();
+      }
+
+      function closeModal() {
+        appState.modal = { open: false, type: null, data: null };
+        render();
+      }
+
+      function saveRoom(e) {
+        e.preventDefault();
+        const number = document.getElementById("m-room-num").value;
+        const type = document.getElementById("m-room-type").value;
+        const price = parseInt(document.getElementById("m-room-price").value);
+        const facilities = document.getElementById("m-room-fac").value;
+
+        mockData.rooms.push({
+          id: Date.now(),
+          number,
+          type,
+          price,
+          status: "Tersedia",
+          facilities,
+        });
+        closeModal();
+        showToast("Kamar baru berhasil ditambahkan!");
+        render();
+      }
+
+      function saveTenant(e) {
+        e.preventDefault();
+        const name = document.getElementById("m-t-name").value;
+        const email = document.getElementById("m-t-email").value;
+        const phone = document.getElementById("m-t-phone").value;
+        const room = document.getElementById("m-t-room").value;
+
+        mockData.tenants.push({
+          id: Date.now(),
+          name,
+          email,
+          phone,
+          room,
+          joinDate: new Date().toISOString().split("T")[0],
+          status: "Aktif",
+        });
+        closeModal();
+        showToast("Penghuni berhasil ditambahkan!");
+        render();
+      }
+
+      function saveBill(e) {
+        e.preventDefault();
+        const tenantName = document.getElementById("m-b-name").value;
+        const room = document.getElementById("m-b-room").value;
+        const month = document.getElementById("m-b-month").value;
+        const amount = parseInt(document.getElementById("m-b-amount").value);
+        const dueDate = document.getElementById("m-b-due").value;
+
+        mockData.bills.push({
+          id: Date.now(),
+          tenantName,
+          room,
+          month,
+          amount,
+          dueDate,
+          status: "Belum Lunas",
+        });
+        closeModal();
+        showToast("Tagihan berhasil diterbitkan!");
+        render();
+      }
+
+      function saveComplaint(e) {
+        e.preventDefault();
+        const category = document.getElementById("m-c-cat").value;
+        const desc = document.getElementById("m-c-desc").value;
+        const user = appState.currentUser;
+
+        mockData.complaints.push({
+          id: Date.now(),
+          tenantName: user.name,
+          room: user.room || "A-01",
+          category,
+          date: new Date().toISOString().split("T")[0],
+          desc,
+          status: "Menunggu",
+        });
+        closeModal();
+        showToast("Pengaduan berhasil dikirim ke Admin!");
+        render();
+      }
+
+      function saveRentRequest(e) {
+        e.preventDefault();
+        const roomNumber = document.getElementById("m-r-room").value;
+        const duration = document.getElementById("m-r-dur").value;
+        const notes = document.getElementById("m-r-notes").value;
+        const user = appState.currentUser;
+
+        mockData.rentRequests.push({
+          id: Date.now(),
+          tenantName: user.name,
+          roomNumber,
+          date: new Date().toISOString().split("T")[0],
+          duration,
+          status: "Menunggu",
+          notes,
+        });
+        closeModal();
+        showToast("Pengajuan sewa berhasil dikirim!");
+        render();
+      }
+
+      function submitPayment(e, billId) {
+        e.preventDefault();
+        const method = document.getElementById("m-pay-method").value;
+        const bill = mockData.bills.find((b) => b.id === billId);
+
+        mockData.payments.push({
+          id: Date.now(),
+          tenantName: appState.currentUser.name,
+          billId,
+          amount: bill.amount,
+          date: new Date().toISOString().split("T")[0],
+          method,
+          proof: "bukti_transfer_baru.jpg",
+          status: "Pending",
+        });
+        closeModal();
+        showToast(
+          "Bukti pembayaran berhasil diunggah! Menunggu verifikasi admin.",
+        );
+        render();
+      }
+
+      function renderActiveTabContent() {
+        switch (appState.activeTab) {
+          case "dashboard":
+            return renderDashboardTab();
+          case "profile":
+            return renderProfileTab();
+          case "rooms":
+            return renderRoomsTab();
+          case "tenants":
+            return renderTenantsTab();
+          case "rent-requests":
+            return renderRentRequestsTab();
+          case "bills":
+            return renderBillsTab();
+          case "payments":
+            return renderPaymentsTab();
+          case "complaints":
+            return renderComplaintsTab();
+          case "reports":
+            return renderReportsTab();
+          default:
+            return renderDashboardTab();
+        }
+      }
+
+      function bindEvents() {
+        const loginForm = document.getElementById("login-form");
+        if (loginForm) {
+          loginForm.onsubmit = (e) => {
+            e.preventDefault();
+            const email = document.getElementById("login-email").value;
+            const user = mockData.users.find((u) => u.email === email) || {
+              id: 99,
+              name: "Pengguna Test",
+              email,
+              role: "penghuni",
+              room: "A-02",
+              phone: "0812345678",
+              avatar:
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            };
+            appState.currentUser = user;
+            appState.activeTab = "dashboard";
+            showToast(`Login berhasil sebagai ${user.name}!`);
+            render();
+          };
+        }
+
+        const regForm = document.getElementById("register-form");
+        if (regForm) {
+          regForm.onsubmit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById("reg-name").value;
+            const email = document.getElementById("reg-email").value;
+            const phone = document.getElementById("reg-phone").value;
+            const room = document.getElementById("reg-room").value;
+
+            const newUser = {
+              id: Date.now(),
+              name,
+              email,
+              role: "penghuni",
+              phone,
+              room,
+              avatar:
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            };
+            mockData.users.push(newUser);
+            mockData.tenants.push({
+              id: newUser.id,
+              name,
+              email,
+              phone,
+              room,
+              joinDate: new Date().toISOString().split("T")[0],
+              status: "Aktif",
+            });
+
+            appState.currentUser = newUser;
+            appState.activeTab = "dashboard";
+            showToast("Registrasi berhasil! Akun Anda telah aktif.");
+            render();
+          };
+        }
+      }
+
+      window.onload = function () {
+        render();
+      };
+    </script>
+  </body>
+</html>
